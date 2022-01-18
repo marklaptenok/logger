@@ -1,20 +1,24 @@
 package logger
 
 //	TO-DO:	use the 'log' package to format (add timestamp) and output string to syslog and stderr.
+//	TO-DO:	use ClociConfiguration to set a level of logging (error, warning, info, debug)
 
 import (
 	"fmt"
 	"log"
+	"os"
 	"runtime"
+	"syscall"
 )
 
-//	the Codelearning.platform error type
+//	The Codelearning.platform error type
 type ClpError struct {
 	Code     uint16
 	Msg      string
 	Location string
 }
 
+//	Makes ClpError a standard error.
 func (e *ClpError) Error() string {
 	return fmt.Sprintf("%s: %d - %s", e.Location, e.Code, e.Msg)
 }
@@ -32,29 +36,57 @@ func Check() error {
 	return nil
 }
 
-//	TO-DO:	think about making interface like the 'Info' function has.
-func Debug(err error) error {
-	//	TO-DO: replace with the actual activity
-	fmt.Printf("[DEBUG] %s\n", err)
-
-	return nil
-}
-
-func Error(err error) error {
+func Error(err error) {
 	//	TO-DO: replace with the actual activity
 	fmt.Printf("[ERROR] %s\n", err)
 
+	if process, err := os.FindProcess(os.Getpid()); err != nil {
+		to_stderr(err)
+		//	TO-DO: change the code.
+		os.Exit(1)
+	} else if err := process.Signal(syscall.SIGTERM); err != nil {
+		to_stderr(err)
+		//	TO-DO: change the code.
+		os.Exit(1)
+	}
+}
+
+//	TO-DO: Add cheking of warning flag
+func Warning(format string, args ...interface{}) error {
+	//	TO-DO: replace with the actual activity
+	data := fmt.Sprintf(format, args...)
+	if location, func_err := get_function_name(3); func_err == nil {
+		fmt.Printf("[WARNING] %s: %s\n", location, data)
+	} else {
+		fmt.Printf("[WARNING] %s\n", data)
+		return func_err
+	}
+
 	return nil
 }
 
+//	TO-DO: Add cheking of debug flag
+func Debug(format string, args ...interface{}) error {
+	//	TO-DO: replace with the actual activity
+	data := fmt.Sprintf(format, args...)
+	if location, func_err := get_function_name(3); func_err == nil {
+		fmt.Printf("[DEBUG] %s: %s\n", location, data)
+	} else {
+		fmt.Printf("[DEBUG] %s\n", data)
+		return func_err
+	}
+
+	return nil
+}
+
+//	TO-DO: Add cheking of info flag
 func Info(format string, args ...interface{}) error {
 	//	TO-DO: replace with the actual activity
 	data := fmt.Sprintf(format, args...)
 	if location, func_err := get_function_name(3); func_err == nil {
 		fmt.Printf("[INFO] %s: %s\n", location, data)
 	} else {
-		//	TO-DO: Add cheking of debug flag
-		Debug(func_err)
+		Warning("%s", func_err)
 		fmt.Printf("[INFO] %s\n", data)
 	}
 
@@ -103,9 +135,8 @@ func to_syslog(err error) error {
 	if location, func_err := get_function_name(3); func_err == nil {
 		fmt.Printf("%s: %s\n", location, err)
 	} else {
-		//	TO-DO: Add checking of debug flag
-		Debug(func_err)
 		fmt.Printf("%s\n", err)
+		return func_err
 	}
 
 	return nil
@@ -117,9 +148,8 @@ func to_stderr(err error) error {
 	if location, func_err := get_function_name(3); func_err == nil {
 		log.Printf("%s: %s\n", location, err)
 	} else {
-		//	TO-DO: Add checking of debug flag
-		Debug(func_err)
 		log.Printf("%s\n", err)
+		return func_err
 	}
 
 	return nil
