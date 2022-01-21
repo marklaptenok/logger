@@ -2,6 +2,7 @@ package logger
 
 //	TO-DO:	use the 'log' package to format (add timestamp) and output string to syslog and stderr.
 //	TO-DO:	use ClociConfiguration to set a level of logging (error, warning, info, debug)
+//	To-DO:	use a specific format to chain errors
 
 import (
 	"fmt"
