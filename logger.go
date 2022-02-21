@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"syscall"
 )
 
 //	The Codelearning.platform error type
@@ -41,13 +40,10 @@ func Error(err error) {
 	//	TO-DO: replace with the actual activity
 	fmt.Printf("[ERROR] %s\n", err)
 
-	if process, err := os.FindProcess(os.Getpid()); err != nil {
-		to_stderr(err)
-		//	TO-DO: change the code.
-		os.Exit(1)
-	} else if err := process.Signal(syscall.SIGTERM); err != nil {
-		to_stderr(err)
-		//	TO-DO: change the code.
+	//	TO-DO: call a function that gracefully finishes the service.
+	if cloci_err, is_cloci_err := err.(*ClpError); is_cloci_err {
+		os.Exit(int(cloci_err.Code))
+	} else {
 		os.Exit(1)
 	}
 }
